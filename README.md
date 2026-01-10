@@ -1,118 +1,115 @@
-# Ctrip-Style AI Travel Assistant
+# MCP Agent Orchestrator
 
-[![Framework](https://img.shields.io/badge/Framework-LangChain-blue)](https://python.langchain.com/)
-[![Orchestration](https://img.shields.io/badge/Orchestration-LangGraph-orange)](https://langchain-ai.github.io/langgraph/)
-[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+The **MCP Agent Orchestrator** is a professional-grade Python implementation of the **Model Context Protocol (MCP)**. It provides a structured environment for Large Language Models (LLMs) to interact with external tools and knowledge bases through a standardized communication layer. The project utilizes `FastMCP` for server-side tool definitions and an asynchronous client-side bridge to OpenAI-compatible interfaces.
 
-An advanced, multi-agent intelligent service system based on **LangChain** and **LangGraph**, designed to simulate a professional travel agency (Ctrip-style). The system handles complex, multi-turn dialogues and dynamic task execution across flight booking, hotel reservations, car rentals, and tour planning.
+## System Architecture
 
-## Project Background
+The project follows a decoupled client-server architecture:
 
-Traditional chatbot systems often struggle with state management in long-running conversations and the safe execution of sensitive operations. This project implements a **Stateful Multi-Agent Orchestration** architecture that manages task delegation, tool-calling permissions, and human-in-the-loop (HITL) verification.
+1. **MCP Client**: Acts as the orchestrator. It manages the lifecycle of the MCP server, performs tool discovery, handles LLM completions, and executes tool calls returned by the model.
+2. **MCP Servers**: Independent services (Weather, RAG) that expose specific functions to the client via the Model Context Protocol.
+3. **Transport Layer**: Uses Standard Input/Output (StdIO) for high-performance, local inter-process communication.
 
-## Architecture Overview
+## Core Components
 
-The system is built on a "Hub-and-Spoke" architecture:
+### 1. Intelligent Client Bridge
 
-- **Primary Assistant:** The central router that identifies intent and delegates tasks.
-- **Specialized Sub-Agents:** Dedicated agents for Flights, Hotels, Car Rentals, and Excursions.
-- **Unified State Management:** A shared state tracking message history, user information, and a dialogue stack.
+The client implementation (`rag_agent.py`, `client.py`) facilitates:
 
-### Key Components
+* Asynchronous lifecycle management using `AsyncExitStack`.
+* Automatic tool schema conversion for OpenAI-compatible function calling.
+* Persistent conversation state and multi-turn reasoning loops.
 
-1.  **Multi-Agent Dispatcher:** Uses dynamic routing via `add_conditional_edges` and a `dialog_stack` to manage sub-agent lifecycle.
-2.  **Permission Control:** Implements a strict distinction between **Safe Tools** (Read-only) and **Sensitive Tools** (Write/Modify).
-3.  **Human-in-the-Loop:** Automated workflow interruption (`interrupt_before`) for sensitive operations, requiring user confirmation before database modification.
-4.  **Context Persistence:** Utilizes `MemorySaver` to ensure seamless dialogue recovery across different sessions or interruptions.
+### 2. Weather Service Server
 
-## Detailed Tool Modules
+The weather server (`server.py`) demonstrates real-time API integration:
 
-| Category       | Safe Tools (Read)                          | Sensitive Tools (Write)                        |
-| :------------- | :----------------------------------------- | :--------------------------------------------- |
-| **Flights**    | `search_flights`, `fetch_user_flight_info` | `update_ticket_to_new_flight`, `cancel_ticket` |
-| **Hotels**     | `search_hotels`                            | `book_hotel`, `update_hotel`, `cancel_hotel`   |
-| **Car Rental** | `search_car_rentals`                       | `book_car_rental`, `cancel_car_rental`         |
-| **Activities** | `search_trip_recommendations`              | `book_excursion`, `cancel_excursion`           |
-| **General**    | `tavily_tool`, `lookup_policy`             | -                                              |
+* Integration with external REST APIs (WeatherAPI).
+* Data normalization and formatting for LLM consumption.
+* Asynchronous request handling using `httpx`.
 
-## State Machine Implementation
+### 3. RAG Knowledge Server
 
-### Dialogue Stack Management
+The RAG server (`rag_server.py`) provides advanced document intelligence:
 
-We use a custom `update_dialog_stack` function to manage the focus of the conversation. When a sub-agent completes its task or the user changes context, the stack "pops," returning control to the Primary Assistant.
+* **Data Ingestion**: Support for PDF and TXT formats using `LangChain`.
+* **Vector Database**: Persistent storage via `ChromaDB`.
+* **Search Optimization**: Implements Maximal Marginal Relevance (MMR) for diverse information retrieval.
+* **Embeddings**: Integration with HuggingFace transformer models.
 
-```python
-def update_dialog_stack(left: list[str], right: Optional[str]) -> list[str]:
-    if right is None: return left
-    if right == "pop": return left[:-1]
-    return left + [right]
+## Project Structure
+
+```text
+├── client.py             # Standard MCP client implementation
+├── rag_agent.py          # Specialized agent for RAG operations
+├── server.py             # Weather service MCP server
+├── rag_server.py         # RAG knowledge base MCP server
+├── test.py               # Connectivity test for LLM API
+├── .env                  # Environment configuration
+└── data/
+    ├── rag_db/           # Vector store persistence directory
+    └── doupocangqiong.txt # Sample knowledge base source
+
 ```
 
-### The `CompleteOrEscalate` Pattern
+## Technical Stack
 
-Sub-agents are equipped with a `CompleteOrEscalate` tool. This allows them to gracefully exit their specialized loop when:
+* **Protocol**: Model Context Protocol (MCP)
+* **LLM Interface**: OpenAI SDK (Compatible with Qwen/DashScope)
+* **RAG Framework**: LangChain
+* **Vector Store**: ChromaDB
+* **Communication**: Asynchronous I/O (asyncio)
 
-- The task is successfully finished.
-- The user requests something outside the sub-agent's domain.
+## Installation
 
-## 🔧 Installation & Setup
+### Prerequisites
 
-1. **Clone the Repository**
+* Python 3.10+
+* Virtual environment (recommended)
 
-   ```bash
-   git clone https://github.com/your-username/ctrip-ai-assistant.git
-   cd ctrip-ai-assistant
-   ```
+### Environment Setup
 
-2. **Environment Configuration**
-   Create a `.env` file and add your API keys:
+Create a `.env` file in the root directory with the following variables:
 
-   ```env
-   OPENAI_API_KEY=your_openai_key
-   TAVILY_API_KEY=your_tavily_key
-   ```
+```env
+API_KEY=your_llm_api_key
+BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+MODEL=qwen-plus
+EMBED_MODEL=sentence-transformers/all-MiniLM-L6-v2
 
-3. **Install Dependencies**
+```
 
-   ```bash
-   pip install -r requirements.txt
-   ```
+### Dependencies
+
+```bash
+pip install mcp langchain langchain-community langchain-openai chromadb httpx python-dotenv openai
+
+```
 
 ## Usage
 
-Run the main script to start the interactive CLI:
+### Running the Weather Agent
 
-```python
-python main.py
+To start the client and connect it to the weather server:
+
+```bash
+python client.py server.py
+
 ```
 
-### System Workflow:
+### Running the RAG Agent
 
-1. **Fetch Context:** On startup, the `fetch_user_info` node automatically retrieves passenger data.
+To initialize the knowledge base and start the RAG-enabled agent:
 
-2. **Intent Routing:** The Primary Assistant analyzes your request.
+```bash
+python rag_agent.py --server_script rag_server.py
 
-3. **Task Delegation:** Control is shifted to the specialized sub-agent (e.g., Flight Assistant).
+```
 
-4. **Approval Loop:** If you attempt to "Cancel a Ticket," the system will pause and ask:
+## Protocol Implementation Details
 
-   > *“Do you approve this operation? Input 'y' to continue.”*
+The implementation strictly adheres to the MCP specification:
 
-## Error Handling
-
-The system implements a `create_tool_node_with_fallback` mechanism. If a tool fails (API timeout or invalid parameters), the `handle_tool_error` function catches the exception and prompts the LLM to fix its query without crashing the workflow.
-
-## Workflow Graph
-
-*(Recommendation: Use LangGraph's `get_graph().draw_mermaid_png()` to generate a visual and place it here)*
-
-- **Nodes:** `primary_assistant`, `update_flight`, `book_hotel`, `leave_skill`, etc.
-- **Edges:** Conditional routing based on `dialog_state` and tool calls.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-**Disclaimer:** *This project is a simulation for educational and developmental purposes and is not directly affiliated with Ctrip.*
+1. **Initialization**: Client initializes the session and retrieves tool manifests.
+2. **Tool Discovery**: LLM is informed of available functions via JSON schema.
+3. **Execution**: Client intercepts `tool_calls`, executes the corresponding server function, and returns the result to the LLM for final synthesis.
