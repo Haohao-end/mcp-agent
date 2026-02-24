@@ -1,11 +1,5 @@
 import json
 import os
-
-"""
-1. 启动客户端
-2. 链接服务端
-3. 回收服务端的资源
-"""
 from argparse import ArgumentParser
 from contextlib import AsyncExitStack
 from mcp import StdioServerParameters, ClientSession
@@ -16,6 +10,12 @@ load_dotenv()
 import traceback
 import httpx
 from openai import OpenAI
+
+"""
+1. 启动客户端
+2. 链接服务端
+3. 回收服务端的资源
+"""
 
 
 class MCPClient(object):
@@ -148,8 +148,3 @@ async def main():
 
 if __name__ == '__main__':
     asyncio.run(main())
-
-'''
-query focus summary ->graphrag
-传统问答->选择rag方式， 
-'''
