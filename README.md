@@ -48,7 +48,7 @@ The RAG server (`rag_server.py`) provides advanced document intelligence:
 ├── .env                  # Environment configuration
 └── data/
     ├── rag_db/           # Vector store persistence directory
-    └── doupocangqiong.txt # Sample knowledge base source
+    └── text.txt # Sample knowledge base source
 
 ```
 
