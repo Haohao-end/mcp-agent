@@ -1,21 +1,23 @@
 import json
 import os
+from contextlib import AsyncExitStack
+from mcp import StdioServerParameters, ClientSession
+from mcp.client.stdio import stdio_client
+import sys
+import asyncio
+from dotenv import load_dotenv
+
+import traceback
+
+from openai import OpenAI
+
+load_dotenv()
 
 """
 1. 启动客户端
 2. 链接服务端
 3. 回收服务端的资源
 """
-from contextlib import AsyncExitStack
-from mcp import StdioServerParameters, ClientSession
-from mcp.client.stdio import stdio_client
-import sys, asyncio
-from dotenv import load_dotenv
-load_dotenv()
-import traceback
-
-from openai import OpenAI
-
 
 class MCPClient(object):
     def __init__(self):
