@@ -1,33 +1,30 @@
 import json
 import os
-
+import asyncio
+import sys
+from contextlib import AsyncExitStack
+from dotenv import load_dotenv
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
+import traceback
+from openai import OpenAI
 """
 1. 启动客户端
 2. 链接服务端
 3. 回收服务端的资源
 """
-from contextlib import AsyncExitStack
-from mcp import StdioServerParameters, ClientSession
-from mcp.client.stdio import stdio_client
-import sys, asyncio
-from dotenv import load_dotenv
 load_dotenv()
-import traceback
-
-from openai import OpenAI
-
 
 class MCPClient(object):
     def __init__(self):
-        self.session = None #上下文管理
+        self.session = None  # 上下文管理
         self.stdio, self.write = None, None
         self.exit_stack = AsyncExitStack()
         print(os.getenv("API_KEY"))
         print(os.getenv("BASE_URL"))
         print(os.getenv("MODEL"))
         self.client = OpenAI(
-            api_key=os.getenv("API_KEY"),
-            base_url=os.getenv("BASE_URL")
+            api_key=os.getenv("API_KEY"), base_url=os.getenv("BASE_URL")
         )
         self.model = os.getenv("MODEL")
 
@@ -39,39 +36,44 @@ class MCPClient(object):
         if not server_script_path.endswith(".py"):
             ValueError("服务端的脚本必须是python文件，请先检查")
 
-        #创建启动服务端服务的参数
+        # 创建启动服务端服务的参数
         server_params = StdioServerParameters(
-            command="python",
-            args=[server_script_path],
-            env = None
+            command="python", args=[server_script_path], env=None
         )
 
-        #启动服务
-        self.stdio, self.write = await self.exit_stack.enter_async_context(stdio_client(server_params))
-        self.session = await self.exit_stack.enter_async_context(ClientSession(self.stdio, self.write))
+        # 启动服务
+        self.stdio, self.write = await self.exit_stack.enter_async_context(
+            stdio_client(server_params)
+        )
+        self.session = await self.exit_stack.enter_async_context(
+            ClientSession(self.stdio, self.write)
+        )
         await self.session.initialize()
-        #调用查看都有那些工具
+        # 调用查看都有那些工具
         response = await self.session.list_tools()
-        print("链接服务器成功，服务段支持一下工具:", [tool.name for tool in response.tools])
+        print(
+            "链接服务器成功，服务段支持一下工具:",
+            [tool.name for tool in response.tools],
+        )
 
     async def process_query(self, query):
         messages = [{"role": "user", "content": query}]
         tools_info = await self.session.list_tools()
 
-
-        available_tools = [{
-            "type": "function",
-            "function": {
-                "name": tool.name,
-                "description": tool.description,
-                "input_schema": tool.inputSchema
+        available_tools = [
+            {
+                "type": "function",
+                "function": {
+                    "name": tool.name,
+                    "description": tool.description,
+                    "input_schema": tool.inputSchema,
+                },
             }
-        } for tool in tools_info.tools]
+            for tool in tools_info.tools
+        ]
 
         response = self.client.chat.completions.create(
-            model=self.model,
-            messages=messages,
-            tools=available_tools
+            model=self.model, messages=messages, tools=available_tools
         )
 
         message = response.choices[0].message
@@ -85,14 +87,15 @@ class MCPClient(object):
             print(f"执行的工具名: {tool_name}, 参数: {tool_args}")
 
             messages.append(message.model_dump())
-            messages.append({
-                "role": "tool",
-                "content": result.content[0].text,
-                "tool_call_id": tool_call.id
-            })
+            messages.append(
+                {
+                    "role": "tool",
+                    "content": result.content[0].text,
+                    "tool_call_id": tool_call.id,
+                }
+            )
             response = self.client.chat.completions.create(
-                model=self.model,
-                messages=messages
+                model=self.model, messages=messages
             )
             return response.choices[0].message.content
         return message.content
@@ -104,7 +107,7 @@ class MCPClient(object):
                 query = input("请输入:")
                 if query.lower() == "exit":
                     break
-                # 这里注释掉原本会出错的代码，暂时打印提示信息
+
                 response = await self.process_query(query)
                 print(f"结果: {response}")
 
@@ -125,5 +128,6 @@ async def main():
         await client.cleanup()
     print("over")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     asyncio.run(main())
