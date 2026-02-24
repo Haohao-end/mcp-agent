@@ -1,8 +1,6 @@
-import asyncio
 from typing import Any
 from mcp.server.fastmcp import FastMCP
 import httpx
-import json
 #创建一个对象
 mcp = FastMCP("weather")
 
@@ -25,10 +23,11 @@ async def get_weather(city: str) -> dict[str, Any]:
         "q": city,
         "key": api_key
     }
+
     #异步方式来请求
     async with httpx.AsyncClient() as client:
         try:
-            response = await client.get(url,params=parameter)
+            response = await client.get(url, params=parameter)
             return response.json()
         except Exception as err:
             return {"error": f"请求失败: {str(err)}"}
@@ -64,14 +63,8 @@ async def query_weather(city: str) -> str:
     print("weather_info:", weather_info)
     return weather_info
 
-'''
-if __name__=="__main__":
-    asyncio.run(query_weather("Shenzhen"))
-    mcp.run(transport="stdio")
-
-'''
 if __name__ == "__main__":
-    #asyncio.run(query_weather("shenzhen"))
+    # asyncio.run(query_weather("shenzhen"))
     mcp.run(transport="stdio")
 
     # server和client都在同一个服务器上，std IO流进行交互，提高交互效率
