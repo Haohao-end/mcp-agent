@@ -492,7 +492,7 @@ async def drift_asearch_demo():
 
 
 if __name__ == '__main__':
-    DATA_DIR = './doupocangqiong/output'
+    DATA_DIR = "./text/output"
     LANCEDB_URI = f'{DATA_DIR}/lancedb'
     '''测试需要打开这一行代码
     asyncio.run(local_asearch("xxx"))
