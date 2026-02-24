@@ -93,11 +93,7 @@ config = {
 }
 
 rag=RAGSystem(config)
-rag.build_knowledge(
-    file_paths=[
-        "./data/doupocangqiong.txt"
-    ]
-)
+rag.build_knowledge(file_paths=["./data/text.txt"])
 
 from mcp.server.fastmcp import FastMCP
 mcp = FastMCP("rag")
