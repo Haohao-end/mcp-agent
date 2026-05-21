@@ -76,6 +76,8 @@ API_KEY=your_llm_api_key
 BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
 MODEL=qwen-plus
 EMBED_MODEL=sentence-transformers/all-MiniLM-L6-v2
+# Optional for You.com Search API (100 free searches/day work without this)
+YDC_API_KEY=your_youcom_api_key
 
 ```
 
@@ -88,14 +90,24 @@ pip install mcp langchain langchain-community langchain-openai chromadb httpx py
 
 ## Usage
 
-### Running the Weather Agent
+### Running the Weather + Web Search Agent
 
-To start the client and connect it to the weather server:
+To start the client and connect it to the MCP server:
 
 ```bash
 python client.py server.py
 
 ```
+
+The server now exposes two tools:
+
+- `query_weather(city)`
+- `search_web(query, count=5)` using You.com Search API (`GET https://api.you.com/v1/agents/search`)
+
+Example prompts:
+
+- "What's the weather in Shenzhen?"
+- "Search the web for MCP Python best practices"
 
 ### Running the RAG Agent
 

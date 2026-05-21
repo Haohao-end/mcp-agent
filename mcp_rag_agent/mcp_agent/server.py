@@ -1,8 +1,9 @@
+import os
 from typing import Any
 from mcp.server.fastmcp import FastMCP
 import httpx
 #创建一个对象
-mcp = FastMCP("weather")
+mcp = FastMCP("weather_and_search")
 
 
 async def get_weather(city: str) -> dict[str, Any]:
@@ -62,6 +63,57 @@ async def query_weather(city: str) -> str:
     weather_info = await format_data(json_data=data)
     print("weather_info:", weather_info)
     return weather_info
+
+
+@mcp.tool()
+async def search_web(query: str, count: int = 5) -> str:
+    """
+    Search the web using You.com Search API.
+    Supports 100 free searches/day without API key; set YDC_API_KEY for higher limits.
+    """
+    if not query or not query.strip():
+        return "error: query is required"
+
+    if count < 1:
+        count = 1
+    if count > 10:
+        count = 10
+
+    url = "https://api.you.com/v1/agents/search"
+    params = {"query": query.strip(), "count": count}
+    headers = {}
+    api_key = os.getenv("YDC_API_KEY", "").strip()
+    if api_key:
+        headers["X-API-Key"] = api_key
+
+    try:
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            response = await client.get(url, params=params, headers=headers)
+
+        if response.status_code == 401:
+            return "error: unauthorized. set YDC_API_KEY or use free-tier quota"
+        if response.status_code == 429:
+            return "error: rate limited by You.com API, please retry later"
+        if response.status_code >= 400:
+            return f"error: search request failed ({response.status_code}): {response.text[:300]}"
+
+        data = response.json()
+        web_results = data.get("results", {}).get("web", []) or []
+        news_results = data.get("results", {}).get("news", []) or []
+
+        if not web_results and not news_results:
+            return "No results found."
+
+        lines = [f"Search results for: {query}"]
+        for idx, item in enumerate((web_results + news_results)[:count], start=1):
+            title = item.get("title", "Untitled")
+            link = item.get("url", "")
+            desc = item.get("description", "")
+            lines.append(f"{idx}. {title}\n   {link}\n   {desc}")
+
+        return "\n".join(lines)
+    except Exception as err:
+        return f"error: search request exception: {str(err)}"
 
 if __name__ == "__main__":
     # asyncio.run(query_weather("shenzhen"))
