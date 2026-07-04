@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/haohao-end-mcp-agent-badge.png)](https://mseep.ai/app/haohao-end-mcp-agent)
+
 # MCP Agent Orchestrator
 
 The **MCP Agent Orchestrator** is a professional-grade Python implementation of the **Model Context Protocol (MCP)**. It provides a structured environment for Large Language Models (LLMs) to interact with external tools and knowledge bases through a standardized communication layer. The project utilizes `FastMCP` for server-side tool definitions and an asynchronous client-side bridge to OpenAI-compatible interfaces.
