@@ -111,6 +111,13 @@ Example prompts:
 - "What's the weather in Shenzhen?"
 - "Search the web for MCP Python best practices"
 
+### Trying a Remote Web Research MCP Client
+
+The optional [Parallel Search MCP example](examples/parallel_search/README.md)
+shows how to search the web and fetch page excerpts over Streamable HTTP, with
+no account or API key. It has its own minimal installation and calls tools
+directly, without an LLM. Existing agent commands and providers are unchanged.
+
 ### Running the RAG Agent
 
 To initialize the knowledge base and start the RAG-enabled agent:
